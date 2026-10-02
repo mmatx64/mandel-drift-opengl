@@ -1,0 +1,15 @@
+build/
+out/
+.vs/
+verification/
+*.user
+/build-*.log
+/configure.log
+/settings.ini
+/music-preview.wav
+/smoke*.bmp
+/smoke*.png
+/*smoke*.txt
+/cycle-*.bmp
+/motion-trace.csv
+/MandelDriftGL-*.zip
