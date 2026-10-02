@@ -10,7 +10,7 @@ Kaleidoscope fades preserve intact 3/5/7-fold symmetry, with full-strength holds
 
 Unzip the Windows download into a writable folder and run `MandelDrift.exe`.
 
-Tested on **Windows 11 with an NVIDIA RTX 3090**. Because it uses OpenGL, it should work with any modern NVIDIA, AMD, or Intel graphics card that supports **OpenGL 4.3+**. Performance depends on your card and resolution.
+Tested on **Windows 11**. Because it uses OpenGL, it should work with any modern NVIDIA, AMD, or Intel graphics card that supports **OpenGL 4.3+**. Performance depends on your card and resolution.
 
 ## Controls
 
