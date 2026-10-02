@@ -2,6 +2,8 @@
 
 Sit back and enjoy slow fractal journeys, colorful palettes, soft glow, and locally generated ambient music. Built with C++17, SDL3, and OpenGL - no CUDA required.
 
+The procedural soundtrack carries a recurring theme through warm synth pads, slow harmonic changes, and spacious echoes. Layers gradually emerge with zoom depth and settle as the view pulls back; Julia transformations add a floating upper texture. All sounds are synthesized locally.
+
 [Download for Windows](https://github.com/mmatx64/mandel-drift-opengl/releases/latest)
 
 Unzip the Windows download into a writable folder and run `MandelDrift.exe`.
@@ -21,6 +23,8 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 cmake --build build --config Release --parallel 8
 cmake --install build --config Release --prefix out
 ```
+
+The optional audio review tool checks synthesis and callback behavior. Run `build\Release\music_review.exe --preview music-preview.wav` to render a full travel audition, or add `julia` for the longer Julia passage. Configure with `-DBUILD_TESTING=OFF` to build only the app.
 
 ## Credits & license
 

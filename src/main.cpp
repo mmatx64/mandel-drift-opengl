@@ -9,6 +9,7 @@
 #include "settings_overlay.h"
 #include "app_settings.h"
 #include "ambient_music.h"
+#include "music_travel.h"
 #include "bloom_shaders.h"
 #include "frame_budget.h"
 #include "trip_effects.h"
@@ -1656,7 +1657,9 @@ int run(bool smoke_test, bool cycle_test, bool motion_test = false, bool motion_
       const int render_w = std::clamp(static_cast<int>(std::lround(output_w * quality_scale)), 1, output_w);
       const int render_h = std::clamp(static_cast<int>(std::lround(output_h * quality_scale)), 1, output_h);
       renderer.resize(render_w, render_h, output_w, output_h);
-      music.set_depth(static_cast<float>(std::clamp(std::log2(3.2 / camera.span) / 17.0, 0.0, 1.0)));
+      music.set_travel(music_travel_depth(camera.span, camera.julia.seed_scale,
+                                         dive_mode ? journey.minimum_span() : .0045),
+                       static_cast<float>(camera.julia.amount));
       const float kernel_ms = renderer.draw(camera, palette_from, palette_to,
                                             static_cast<float>(palette_fade / kPaletteFadeSeconds),
                                             static_cast<float>(color_time),

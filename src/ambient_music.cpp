@@ -35,7 +35,8 @@ void SDLCALL AmbientMusic::feed(void* user, SDL_AudioStream* stream, int additio
   while (remaining > 0) {
     const int count = std::min(remaining, 1024);
     music.synth_.render(samples.data(), count, music.gain_.load(std::memory_order_relaxed),
-                       music.depth_.load(std::memory_order_relaxed));
+                       music.depth_.load(std::memory_order_relaxed),
+                       music.julia_.load(std::memory_order_relaxed));
     double energy = 0;
     for (int i = 0; i < count * 2; ++i) energy += samples[i] * samples[i];
     music.envelope_.store(static_cast<float>(std::sqrt(energy / (count * 2))), std::memory_order_relaxed);
