@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 cmake_minimum_required(VERSION 3.28)
-project(MandelDriftGL VERSION 0.10.0 LANGUAGES CXX RC)
+project(MandelDriftGL VERSION 0.10.1 LANGUAGES CXX RC)
 
 # Static C++ and SDL runtimes keep the Windows release self-contained.
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

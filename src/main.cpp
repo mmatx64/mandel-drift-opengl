@@ -1435,8 +1435,10 @@ int run(bool smoke_test, bool cycle_test, bool motion_test = false, bool motion_
           int window_w = 0, window_h = 0, drawable_w = 0, drawable_h = 0;
           SDL_GetWindowSize(window, &window_w, &window_h);
           SDL_GetWindowSizeInPixels(window, &drawable_w, &drawable_h);
-          if (window_w > 0 && drawable_w > 0 && drawable_h > 0)
+          if (window_w > 0 && drawable_w > 0 && drawable_h > 0) {
             music_volume = settings.volume_at(event.motion.x * drawable_w / window_w, drawable_w, drawable_h);
+            music_muted = false;
+          }
         }
         if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT &&
             menu_visible && menu_progress > 0.4) {
@@ -1460,13 +1462,13 @@ int run(bool smoke_test, bool cycle_test, bool motion_test = false, bool motion_
               bloom_enabled = !bloom_enabled;
             } else if (control == 4) {
               music_enabled = !music_enabled;
+              if (music_enabled) music_muted = false;
               if (music_enabled && persist_settings && !music.start())
                 std::fprintf(stderr, "Audio unavailable: %s\n", SDL_GetError());
             } else if (control == 5) {
               volume_dragging = true;
               music_volume = settings.volume_at(event.button.x * drawable_w / window_w, drawable_w, drawable_h);
-            } else if (control == 6) {
-              music_muted = !music_muted;
+              music_muted = false;
             }
           }
         }
@@ -1500,8 +1502,14 @@ int run(bool smoke_test, bool cycle_test, bool motion_test = false, bool motion_
               music_muted = !music_muted;
             }
             break;
-          case SDLK_MINUS: music_volume = std::max(0, music_volume - 5); break;
-          case SDLK_EQUALS: music_volume = std::min(100, music_volume + 5); break;
+          case SDLK_MINUS:
+            music_volume = std::max(0, (music_muted ? 0 : music_volume) - 5);
+            music_muted = false;
+            break;
+          case SDLK_EQUALS:
+            music_volume = std::min(100, (music_muted ? 0 : music_volume) + 5);
+            music_muted = false;
+            break;
           case SDLK_F:
             toggle_window_mode(window, mode);
             break;

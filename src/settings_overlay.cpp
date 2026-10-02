@@ -23,6 +23,7 @@ constexpr int kWidth = 1200;
 constexpr int kHeight = 250;
 constexpr int kPerformanceLeft = 215, kPerformanceTop = 19;
 constexpr int kPerformanceWidth = 420, kPerformanceHeight = 32;
+constexpr float kSliderLeft = 480, kSliderWidth = 590;
 
 template <typename T> T gl_proc(const char* name) {
   auto* address = SDL_GL_GetProcAddress(name);
@@ -322,14 +323,14 @@ void SettingsOverlay::update_texture(bool auto_palette, bool shuffle, bool endle
     text(image, 47, 190, L"Music", 21, {247, 240, 255, 255});
     toggle(image, 202, music, 181);
     text(image, 331, 190, L"Volume", 21, {247, 240, 255, 255});
-    const float slider_value = 480.0f + 490.0f * volume / 100.0f;
-    rounded(image, 480, 198, 490, 8, 4, {82, 53, 115, 240});
-    if (volume > 0) rounded(image, 480, 198, slider_value - 480, 8, 4, {25, 211, 232, 240});
+    const int displayed_volume = muted ? 0 : std::clamp(volume, 0, 100);
+    const float slider_value = kSliderLeft + kSliderWidth * displayed_volume / 100.0f;
+    rounded(image, kSliderLeft, 198, kSliderWidth, 8, 4, {82, 53, 115, 240});
+    if (displayed_volume > 0)
+      rounded(image, kSliderLeft, 198, slider_value - kSliderLeft, 8, 4, {25, 211, 232, 240});
     rounded(image, slider_value - 9, 193, 18, 18, 9, {231, 255, 255, 255});
-    const std::wstring percent = std::to_wstring(volume) + L"%";
-    text(image, 990, 190, percent.c_str(), 21, {247, 240, 255, 255});
-    text(image, 1060, 194, muted ? L"MUTED" : L"MUTE", 17,
-         muted ? Color{247, 93, 180, 255} : Color{150, 233, 244, 255});
+    const std::wstring percent = std::to_wstring(displayed_volume) + L"%";
+    text(image, 1100, 190, percent.c_str(), 21, {247, 240, 255, 255});
     if (music && !audio_available) text(image, 47, 220, L"Audio unavailable", 13, {247, 130, 190, 255});
   }
   gl().active_texture(GL_TEXTURE0);
@@ -402,8 +403,7 @@ int SettingsOverlay::hit_test(float mouse_x, float mouse_y, int width, int heigh
   if (x < 32 || x >= 1170) return -1;
   if (y >= 171 && y < 234) {
     if (x < 317) return 4;
-    if (x >= 460 && x <= 985) return 5;
-    if (x >= 1050) return 6;
+    if (x >= kSliderLeft - 20 && x <= kSliderLeft + kSliderWidth + 15) return 5;
     return -1;
   }
   if (y < 65 || y >= 151) return -1;
@@ -416,5 +416,5 @@ int SettingsOverlay::hit_test(float mouse_x, float mouse_y, int width, int heigh
 int SettingsOverlay::volume_at(float mouse_x, int width, int height) const {
   const Placement where = placement(width, height);
   const float x = (mouse_x - where.left) * kWidth / where.width;
-  return std::clamp(static_cast<int>(std::lround((x - 480) * 100 / 490)), 0, 100);
+  return std::clamp(static_cast<int>(std::lround((x - kSliderLeft) * 100 / kSliderWidth)), 0, 100);
 }
