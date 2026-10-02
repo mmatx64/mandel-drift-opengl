@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 param(
   [Parameter(Mandatory=$true)][string]$Executable,
   [Parameter(Mandatory=$true)][string]$OutputDirectory,

@@ -1,2 +1,3 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // The first icon is used by Windows Explorer and SDL's native window class.
 IDI_ICON1 ICON "../assets/mandeldrift.ico"

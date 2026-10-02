@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Measure a decoded stereo 16-bit PCM WAV using NumPy."""
 import json
 import sys

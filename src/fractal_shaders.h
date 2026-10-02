@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
 // MODE: 0 wide Mandelbrot, 1 wide Julia, 2 checked perturbation,

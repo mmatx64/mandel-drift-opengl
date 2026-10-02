@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Generate the app's mathematical Mandelbrot icon (requires NumPy and Pillow)."""
 from pathlib import Path
 import numpy as np

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include "fractal_gl.h"
 #include "fractal_shaders.h"
 #include <algorithm>
