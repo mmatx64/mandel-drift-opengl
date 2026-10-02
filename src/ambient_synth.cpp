@@ -26,7 +26,17 @@ float envelope(int age, double attack, double hold, double release) {
 }
 }
 
-AmbientSynth::AmbientSynth() : echo_left_(48000, 0), echo_right_(48000, 0) {
+AmbientSynth::AmbientSynth(std::uint32_t seed)
+    : random_(seed), echo_left_(48000, 0), echo_right_(48000, 0) {
+  chord_ = std::uniform_int_distribution<int>(0, 5)(random_);
+  drift_phase_ = std::uniform_real_distribution<double>(0, 1)(random_);
+  lead_octave_ = std::bernoulli_distribution(.35)(random_) ? -12 : 0;
+  figure_offset_ = std::uniform_int_distribution<int>(0, 7)(random_);
+  air_offset_ = std::uniform_int_distribution<int>(0, 5)(random_);
+  for (int voice = 3; voice < 5; ++voice)
+    voicing_[voice] = std::bernoulli_distribution(.4)(random_) ? 12 : 0;
+  for (auto& bank : phases_)
+    for (auto& phase : bank) phase = std::uniform_real_distribution<double>(0, 1)(random_);
   constexpr int diffusion_lengths[] = {1499, 2111, 1601, 1987};
   constexpr int reverb_lengths[] = {4217, 4787, 5521, 6311, 7219, 8089, 9041, 10007};
   for (int i = 0; i < 4; ++i) diffusion_[i].resize(diffusion_lengths[i], 0);
@@ -35,6 +45,8 @@ AmbientSynth::AmbientSynth() : echo_left_(48000, 0), echo_right_(48000, 0) {
     table_[i] = static_cast<float>(std::sin(2 * pi * i / 2048));
   update_controls(0, 0);
 }
+
+float AmbientSynth::musical_level() const { return std::sqrt(musical_energy_); }
 
 float AmbientSynth::wave(double& phase, double hz) {
   phase += hz / sample_rate;
@@ -96,7 +108,7 @@ void AmbientSynth::update_controls(float target_depth, float target_julia) {
   depth_ += (target_depth - depth_) * depth_step;
   julia_ += (target_julia - julia_) * julia_step;
   const double seconds = frame_ / static_cast<double>(sample_rate);
-  const float movement = sample(seconds / 37.0);
+  const float movement = sample(seconds / 37.0 + drift_phase_);
   brightness_ = 0.30f + static_cast<float>(depth_) * 0.45f + movement * 0.055f;
   const double cutoff = 720 + depth_ * 1150 + movement * 110;
   filter_ = static_cast<float>(1 - std::exp(-2 * pi * cutoff / sample_rate));
@@ -107,13 +119,13 @@ void AmbientSynth::update_controls(float target_depth, float target_julia) {
   lead_vibrato_ = 0.0012f * sample(seconds * 4.6);
   air_drift_ = 0.0009f * sample(seconds / 11.0);
   for (int voice = 0; voice < 5; ++voice) {
-    const float breath = 0.86f + 0.14f * sample(seconds / (15.0 + voice * 3.1) + voice * 0.17);
+    const float breath = 0.86f + 0.14f * sample(seconds / (15.0 + voice * 3.1) + voice * 0.17 + drift_phase_);
     pad_levels_[voice] = breath * (voice < 2 ? 0.032f : 0.021f) *
         (voice < 3 ? 1.0f : 0.65f + static_cast<float>(depth_) * 0.35f);
     const double drift = 0.0006 * sample(seconds / (27.0 + voice * 2.0) + voice * 0.21);
     for (int bank = 0; bank < 2; ++bank) {
       const int harmony = bank == bank_ ? chord_ : (chord_ + 1) % 6;
-      const double hz = frequency(chords[harmony][voice]);
+      const double hz = frequency(chords[harmony][voice] + voicing_[voice]);
       frequencies_[bank][voice * 2] = hz * (0.9985 + drift);
       frequencies_[bank][voice * 2 + 1] = hz * (1.0015 - drift);
     }
@@ -156,23 +168,27 @@ void AmbientSynth::render(float* stereo, int frames, float target_gain, float ta
     left += bass;
     right += bass;
 
-    if (frame_ % (sample_rate * 4) == 0) {
-      const auto step = frame_ / (sample_rate * 4);
-      const auto phrase = step / 8;
+    if (frame_ == next_lead_frame_) {
+      const auto step = lead_step_++;
+      if (step % 8 == 0)
+        lead_spacing_ = std::uniform_int_distribution<int>(sample_rate * 38 / 10, sample_rate * 45 / 10)(random_);
+      next_lead_frame_ += lead_spacing_;
       int pitch = theme[step % 8];
-      // Only the closing answer varies; the theme's contour and tonal center stay.
-      if (step % 8 == 6 && phrase % 3 != 0) pitch = phrase % 3 == 1 ? 70 : 67;
+      // Keep the four-note opening; vary only its quiet answering phrase.
+      constexpr int answers[] = {72, 70, 67};
+      if (step % 8 == 6) pitch = answers[std::uniform_int_distribution<int>(0, 2)(random_)];
+      if (step % 8 == 4 && std::bernoulli_distribution(.25)(random_)) pitch = 79;
       if (pitch >= 0) {
         auto& note = lead_notes_[step % lead_notes_.size()];
-        note.frequency = frequency(pitch);
+        note.frequency = frequency(pitch + lead_octave_);
         note.age = 0;
-        note.pan = phrase % 2 == 0 ? 0.43f : 0.57f;
-        note.expression = step % 8 == 1 ? 0.85f : 1.0f;
+        note.pan = std::uniform_real_distribution<float>(.40f, .60f)(random_);
+        note.expression = std::uniform_real_distribution<float>(.82f, 1.0f)(random_);
       }
     }
     if (frame_ % (sample_rate * 2) == 0) {
       const auto step = frame_ / (sample_rate * 2);
-      const int pitch = figure[step % 8];
+      const int pitch = figure[(step + figure_offset_) % 8];
       if (pitch >= 0) {
         auto& note = figure_notes_[step % figure_notes_.size()];
         note.frequency = frequency(pitch);
@@ -183,7 +199,7 @@ void AmbientSynth::render(float* stereo, int frames, float target_gain, float ta
     if (frame_ % (sample_rate * 16) == 0) {
       const auto step = frame_ / (sample_rate * 16);
       auto& note = air_notes_[step % air_notes_.size()];
-      note.frequency = frequency(air[step % 6]);
+      note.frequency = frequency(air[(step + air_offset_) % 6]);
       note.age = 0;
       note.pan = step % 2 == 0 ? 0.22f : 0.78f;
     }
@@ -229,11 +245,16 @@ void AmbientSynth::render(float* stereo, int frames, float target_gain, float ta
     low_left_ += (left + echo_l * 0.22f + tail[0] * 0.85f - low_left_) * 0.20f;
     low_right_ += (right + echo_r * 0.22f + tail[1] * 0.85f - low_right_) * 0.20f;
     const float opening = smooth(frame_ / (sample_rate * 8.0));
+    const float musical_left = std::tanh(low_left_ * 1.35f) * 0.8f * opening;
+    const float musical_right = std::tanh(low_right_ * 1.35f) * 0.8f * opening;
+    // Stereo musical energy before volume; exclude the constant binaural tones.
+    musical_energy_ += ((musical_left * musical_left + musical_right * musical_right) * .5f -
+                        musical_energy_) * .000173596f;
     // Binaural carriers remain channel-specific, outside music crossfeed/reverb.
     const float binaural_left = wave(binaural_phases_[0], 200) * 0.009f;
     const float binaural_right = wave(binaural_phases_[1], 210) * 0.009f;
-    stereo[i * 2] = (std::tanh(low_left_ * 1.35f) * 0.8f + binaural_left) * gain_ * opening;
-    stereo[i * 2 + 1] = (std::tanh(low_right_ * 1.35f) * 0.8f + binaural_right) * gain_ * opening;
+    stereo[i * 2] = (musical_left + binaural_left * opening) * gain_;
+    stereo[i * 2 + 1] = (musical_right + binaural_right * opening) * gain_;
     // Muting changes only output gain: phrases, controls, and tails keep moving.
     ++frame_;
   }

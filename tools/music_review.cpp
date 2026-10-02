@@ -2,6 +2,7 @@
 #include "ambient_music.h"
 #include "julia_transition.h"
 #include "music_travel.h"
+#include "music_reactivity.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -154,6 +155,15 @@ void tests() {
     offset += frames;
   }
   require(reference == partitioned, "Callback partition changes audio");
+  AmbientSynth silent, varied(3081);
+  silent.render(partitioned.data(), count, 0, .8f, .4f);
+  require(silent.musical_level() == whole.musical_level(), "Musical energy depends on listening volume");
+  require(std::all_of(partitioned.begin(), partitioned.end(), [](float value) { return value == 0; }),
+          "Zero volume is not silent");
+  varied.render(partitioned.data(), count, .7f, .8f, .4f);
+  double variation = 0;
+  for (size_t i = 0; i < reference.size(); ++i) variation += std::abs(reference[i] - partitioned[i]);
+  require(variation / reference.size() > .001, "Different seeds did not vary the launch music");
 
   AmbientSynth running, muted;
   std::array<float, 2048> a{}, b{};
@@ -166,19 +176,39 @@ void tests() {
   }
   for (int i = 0; i < 2048; ++i)
     require(std::abs(a[i] - b[i]) < .00003f, "Mute interrupts phrase/reverb timeline");
+  require(running.musical_level() == muted.musical_level(), "Mute changes musical energy tracking");
+
+  AudioBreath breath;
+  float steady = 0, swell = 0, fade = 0;
+  for (int i = 0; i < 600; ++i) steady = breath.advance(.08f, 1.0 / 60, true);
+  for (int i = 0; i < 60; ++i) swell = breath.advance(.12f, 1.0 / 60, true);
+  require(swell > steady + .35f, "Breathing did not follow a musical swell");
+  for (int i = 0; i < 600; ++i) fade = breath.advance(.12f, 1.0 / 60, false);
+  require(fade == 0, "Muted breathing did not fade away");
+  AudioBreath silence;
+  require(silence.advance(0, .1, true) == 0, "Silence lights the scene");
 
   AmbientSynth synth;
   Metrics metrics;
   const auto start = std::chrono::steady_clock::now();
+  AudioBreath musical_breath;
+  float breath_minimum = 1, breath_maximum = 0;
   for (int step = 0; step < 288 * rate / 1024; ++step) {
     const double t = step * 1024.0 / rate;
     const auto targets = travel(t, false);
     // Include sudden controls, long holds, return, and a full harmony wrap.
     synth.render(a.data(), 1024, 1.0f, t > 240 ? 1.0f : targets[0], t > 260 ? 1.0f : 0.0f);
     metrics.add(a.data(), 1024);
+    const float intensity = musical_breath.advance(synth.musical_level(), 1024.0 / rate, true);
+    if (t > 10) {
+      breath_minimum = std::min(breath_minimum, intensity);
+      breath_maximum = std::max(breath_maximum, intensity);
+    }
   }
   metrics.report("Composition/transition check");
   metrics.check();
+  require(breath_maximum - breath_minimum > .25f, "Synthesized music did not produce visible breathing");
+  std::printf("Musical breathing range %.4f..%.4f\n", breath_minimum, breath_maximum);
   const double elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
   std::printf("Synthesis time %.2fs for 288s of audio (%.1fx realtime)\n", elapsed, 288 / elapsed);
   synth.render(a.data(), 1024, std::numeric_limits<float>::quiet_NaN(),
@@ -209,7 +239,7 @@ void tests() {
     require(!music.start() && !music.available(), "Unavailable device not handled");
   }
   SDL_Quit();
-  std::puts("PASS: depth, Julia, callback partitions, mute continuity, headroom, stereo, SDL callback");
+  std::puts("PASS: seeded variation, musical breathing, depth, Julia, callback partitions, mute continuity, headroom, stereo, SDL callback");
 }
 }
 

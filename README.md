@@ -2,7 +2,9 @@
 
 Sit back and enjoy slow fractal journeys, colorful palettes, soft glow, and locally generated ambient music. Built with C++17, SDL3, and OpenGL - no CUDA required.
 
-The procedural soundtrack carries a recurring theme through warm synth pads, slow harmonic changes, and spacious echoes. Layers gradually emerge with zoom depth and settle as the view pulls back; Julia transformations add a floating upper texture. All sounds are synthesized locally.
+The procedural soundtrack carries a recurring theme through warm synth pads, slow harmonic changes, and spacious echoes. Each launch varies the opening harmony, voicings, phrase spacing, and answering notes while keeping the theme. Layers gradually emerge with zoom depth and settle as the view pulls back; Julia transformations add a floating upper texture. All sounds are synthesized locally.
+
+Kaleidoscope fades preserve intact 3/5/7-fold symmetry, with full-strength holds in detailed mid-dive regions. Colors and glow breathe with musical swells independently of listening volume, including with bloom off. Breathing fades away when music is muted or the volume reaches zero; camera movement stays gradual.
 
 [Download for Windows](https://github.com/mmatx64/mandel-drift-opengl/releases/latest)
 

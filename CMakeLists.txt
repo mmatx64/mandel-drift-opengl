@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 cmake_minimum_required(VERSION 3.28)
-project(MandelDriftGL VERSION 0.10.1 LANGUAGES CXX RC)
+project(MandelDriftGL VERSION 0.10.2 LANGUAGES CXX RC)
 
 # Static C++ and SDL runtimes keep the Windows release self-contained.
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -47,6 +47,7 @@ add_executable(MandelDrift WIN32
   src/ambient_synth.cpp
   src/ambient_synth.h
   src/music_travel.h
+  src/music_reactivity.h
 )
 target_include_directories(MandelDrift PRIVATE src)
 target_link_libraries(MandelDrift PRIVATE SDL3::SDL3-static OpenGL::GL gdi32)

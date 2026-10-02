@@ -2,15 +2,17 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <random>
 #include <vector>
 
 // Device-independent, deterministic stereo synthesis. Owned by the audio thread.
 class AmbientSynth {
  public:
   static constexpr int sample_rate = 48000;
-  AmbientSynth();
+  explicit AmbientSynth(std::uint32_t seed = 3080);
   void render(float* stereo, int frames, float target_gain, float target_depth,
               float target_julia = 0);
+  float musical_level() const;
  private:
   struct Note {
     double phase = 0;
@@ -30,6 +32,13 @@ class AmbientSynth {
   float diffuse(float value, int channel);
   std::array<float, 2> reverberate(float left, float right);
   void update_controls(float target_depth, float target_julia);
+  std::mt19937 random_;
+  std::array<int, 5> voicing_{};
+  double drift_phase_ = 0;
+  int lead_octave_ = 0, figure_offset_ = 0, air_offset_ = 0;
+  std::uint64_t next_lead_frame_ = 0, lead_step_ = 0;
+  int lead_spacing_ = sample_rate * 4;
+  float musical_energy_ = 0;
   std::array<float, 2049> table_{};
   std::array<std::array<double, 10>, 2> phases_{};
   std::array<std::array<double, 10>, 2> frequencies_{};

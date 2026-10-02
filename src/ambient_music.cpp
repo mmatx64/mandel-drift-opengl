@@ -4,6 +4,8 @@
 #include <array>
 #include <cmath>
 
+AmbientMusic::AmbientMusic() : synth_(std::random_device{}()) {}
+
 AmbientMusic::~AmbientMusic() {
   // SDL waits for an in-flight callback before freeing the stream and device.
   if (stream_) SDL_DestroyAudioStream(stream_);
@@ -40,6 +42,7 @@ void SDLCALL AmbientMusic::feed(void* user, SDL_AudioStream* stream, int additio
     double energy = 0;
     for (int i = 0; i < count * 2; ++i) energy += samples[i] * samples[i];
     music.envelope_.store(static_cast<float>(std::sqrt(energy / (count * 2))), std::memory_order_relaxed);
+    music.musical_level_.store(music.synth_.musical_level(), std::memory_order_relaxed);
     if (!SDL_PutAudioStreamData(stream, samples.data(), count * 2 * sizeof(float))) {
       music.failed_ = true;
       return;
